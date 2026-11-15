@@ -73,8 +73,9 @@ Full-resolution videos: [`demo/*.mp4`](demo/); errors per horizon: [`demo/*.json
 
 ## Reproducing
 
-Environment used: Python 3.11, TabPFN (v2, v3.5 and v3.5-fast weights), PyTorch with CUDA (NVIDIA A100
-80 GB), NumPy, SciPy, scikit-learn, Gymnasium 1.4 + MuJoCo 4.0 (robot simulation), matplotlib, imageio.
+Environment used (NVIDIA A100 80 GB): Python 3.11.17, `tabpfn==9.2.0` (with the TabPFN v2, v3.5 and
+v3.5-fast weights), `torch==2.14.1` (CUDA 13.0), `numpy==2.4.6`, `scipy==1.17.1`, `scikit-learn==1.9.1`,
+`matplotlib==3.11.2`; for the robot simulation `gymnasium==1.4.0`, `mujoco==4.0.1`, `imageio==2.38.1`.
 
 1. Data: D4RL `hopper/halfcheetah/walker2d-medium-v2` and 18 CAMELS basins, converted with
    `code/prep_data.py` (public datasets; not redistributed here).

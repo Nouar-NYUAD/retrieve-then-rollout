@@ -117,6 +117,8 @@ def robots(macros, rows):
         macros[f"LNSix{w}TabRet"] = fmt(med(T, c, RET)[0])
         macros[f"LNSix{w}TabFull"] = fmt(med(T, c, FULL)[0])
         macros[f"LNSix{w}TabRecent"] = fmt(med(T, c, REC)[0])
+        macros[f"LNSix{w}TabRandom"] = fmt(med(T, c, ("random", 100, "tabpfn"))[0])
+        macros[f"LNSix{w}GPRandom"] = fmt(med(T, c, ("random", 100, "gp"))[0])
 
 
 def noise(macros, rows):
