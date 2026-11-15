@@ -439,8 +439,84 @@ def fig_precision():
     save(fig, "precision")
 
 
+def fig_scaling(macros):
+    """Retrieval vs full-pool context as the D4RL Hopper pool grows (scaling.py, results/sync/scaling)."""
+    import scaling_summary as SS
+    folder = f"{PT.SYNC}/scaling"
+    if not glob.glob(f"{folder}/scale_hopper_nt*.json"):
+        return
+    S = SS.summary(folder)
+    fig, axs = plt.subplots(1, 3, figsize=(6.5, 2.15))
+    for st, k, lab in [("retrieval", "tab_ret", "TabPFN + retrieval (ours), 100 rows"), ("full", "tab_full", "TabPFN, full pool")]:
+        pts = sorted((r["pool_rows"], r) for (n, s), r in S.items() if s == st and "pool_rows" in r)
+        if not pts:
+            continue
+        x = [p for p, _ in pts]
+        for ax, key in zip(axs, ("secs_per_step", "gpu_gb", "err50")):
+            s = style(k); s["label"] = lab
+            ax.plot(x, [r[key] for _, r in pts], **s)
+    for ax, yl, ttl in zip(axs, ("seconds per rollout step", "peak GPU memory (GB)", "rollout error after 50 steps"),
+                           ("(a) time", "(b) memory", "(c) accuracy")):
+        from matplotlib.ticker import FixedLocator, FuncFormatter, NullFormatter, NullLocator
+        ax.set_xscale("log"); ax.set_xlabel("transitions in the pool"); ax.set_ylabel(yl); ax.set_title(ttl, loc="left")
+        ax.xaxis.set_major_locator(FixedLocator([2000, 5000, 10000, 20000, 50000]))
+        ax.xaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v / 1000:g}k"))
+        ax.xaxis.set_minor_locator(NullLocator()); ax.xaxis.set_minor_formatter(NullFormatter())
+    axs[0].set_yscale("log"); nice_log_y(axs[0]); axs[2].set_yscale("log"); nice_log_y(axs[2])
+    h, l = axs[0].get_legend_handles_labels()
+    fig.tight_layout(w_pad=0.6)
+    fig.legend(h, l, loc="upper center", ncol=2, frameon=False, bbox_to_anchor=(0.5, 0.0))
+    save(fig, "scaling")
+    full = sorted((r["pool_rows"], r) for (n, s), r in S.items() if s == "full" and "pool_rows" in r)
+    ret = sorted((r["pool_rows"], r) for (n, s), r in S.items() if s == "retrieval" and "pool_rows" in r)
+    macros["ScaleFullSmallRows"] = f"{full[0][0] / 1000:.1f}"; macros["ScaleFullSmallSec"] = f"{full[0][1]['secs_per_step']:.1f}"
+    macros["ScaleFullLargeRows"] = f"{full[-1][0] / 1000:.0f}"; macros["ScaleFullLargeSec"] = f"{full[-1][1]['secs_per_step']:.0f}"
+    macros["ScaleRetMinSec"] = f"{min(r['secs_per_step'] for _, r in ret):.1f}"
+    macros["ScaleRetMaxSec"] = f"{max(r['secs_per_step'] for _, r in ret):.1f}"
+    macros["ScaleRetGPU"] = f"{np.median([r['gpu_gb'] for _, r in ret]):.1f}"
+    macros["ScaleFullGPU"] = f"{np.median([r['gpu_gb'] for _, r in full]):.0f}"
+    macros["ScaleRetLargeRows"] = f"{ret[-1][0] / 1000:.0f}"
+    macros["ScaleRetSmallErr"] = f"{ret[0][1]['err50']:.2f}"; macros["ScaleRetLargeErr"] = f"{ret[-1][1]['err50']:.2f}"
+    macros["ScaleFullSmallErr"] = f"{full[0][1]['err50']:.2f}"; macros["ScaleFullLargeErr"] = f"{full[-1][1]['err50']:.2f}"
+    macros["ScaleNSeeds"] = str(min(r["n_seeds"] for _, r in full + ret))
+
+
+def fig_wall(macros):
+    """Pendulum with / without walls (impacts) x observation noise (study.py pendulum_box)."""
+    files = sorted(glob.glob(f"{PT.SYNC}/wall/*.json"))
+    if not files:
+        return
+    rows = A.load(files)
+    T = A.per_seed(rows, "100")
+    noises = ["0", "0.005", "0.01", "0.02", "0.05"]
+    keys = ["tab_ret", "dyna_ret", "tab_full", "gp_ret", "mlp", "lin_ret"]
+    fig, axs = plt.subplots(1, 2, figsize=(6.5, 2.35), sharey=True)
+    for ax, (w, name) in zip(axs, [("0", "Smooth pendulum"), ("0.15", "Pendulum with walls (impacts)")]):
+        for k in keys:
+            st = lambda n: "pendulum_box" + (f"+noise{n}" if n != "0" else "") + f"+wall{float(w):g}+lags4+nt4"
+            y = [PT.med(T, st(n), arm(k))[0] for n in noises]
+            ax.plot(range(len(noises)), y, **style(k))
+        ax.set_xticks(range(len(noises))); ax.set_xticklabels(["0", "0.5%", "1%", "2%", "5%"])
+        ax.set_yscale("log"); nice_log_y(ax); ax.set_xlabel("observation noise"); ax.set_title(name, loc="left")
+    axs[0].set_ylabel("rollout error after 100 steps")
+    h, l = axs[0].get_legend_handles_labels()
+    fig.tight_layout()
+    fig.legend(h, l, loc="upper center", ncol=3, frameon=False, bbox_to_anchor=(0.5, 0.0))
+    save(fig, "wall")
+    for w, wk in (("0", "Smooth"), ("0.15", "Wall")):
+        for n, nk in zip(noises, ("Zero", "Half", "One", "Two", "Five")):
+            st = "pendulum_box" + (f"+noise{n}" if n != "0" else "") + f"+wall{float(w):g}+lags4+nt4"
+            for mdl, mk in (("tabpfn", "Tab"), ("dynapfn", "Dyna")):
+                r, b, nn = paired_ratio(T, st, ("retrieval", 100, mdl), ("retrieval", 100, "gp"))
+                if np.isfinite(r):
+                    macros[f"Wall{wk}{nk}GPOver{mk}"] = f"{r:.2f}" if r < 10 else f"{r:.0f}"
+                    macros[f"Wall{wk}{nk}GPOver{mk}Better"] = f"{b}/{nn}"
+                    macros[f"Wall{wk}{nk}GPBetterThan{mk}"] = f"{1 / r:.0f}" if r < 0.1 else f"{1 / r:.1f}"
+    macros["WallNSeeds"] = str(min(len(d) for (s_, a_), d in T.items() if s_.startswith("pendulum_box") and a_ == arm("tab_ret")))
+
+
 def all_figures(macros):
     rows = PT.full_rows()
     fig_regime(rows, macros); fig_robots(rows); fig_noise(rows); fig_planning(); fig_counterfactual(macros)
-    cf_robots(macros); control_table(macros)
+    cf_robots(macros); control_table(macros); fig_scaling(macros); fig_wall(macros)
     fig_diagnostics(macros); fig_synthetic(rows); fig_precision()

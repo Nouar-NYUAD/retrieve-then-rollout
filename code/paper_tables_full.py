@@ -35,7 +35,7 @@ def fmt_nse(x):
 def full_rows():
     files = [f for f in sorted(glob.glob(f"{SYNC}/*/*.json"))
              if "diag_" not in Path(f).name and not Path(f).name.startswith("plan")
-             and Path(f).parent.name not in ("cheetah", "demo")]     # counterfactual / control files: own format
+             and Path(f).parent.name not in ("cheetah", "demo", "scaling")]   # own formats (counterfactual, control, cost)
     return A.load(files)
 
 
