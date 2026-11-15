@@ -1,0 +1,9 @@
+--controller tabpfn --strategy trajretrieval --seed_ids 0 --workers 6 --T 100 --video_dir videos --out demo_tabpfn_trajretrieval_s0.json
+--controller tabpfn --strategy trajretrieval --seed_ids 1 --workers 6 --T 100 --video_dir videos --out demo_tabpfn_trajretrieval_s1.json
+--controller tabpfn --strategy trajretrieval --seed_ids 2 --workers 6 --T 100 --video_dir videos --out demo_tabpfn_trajretrieval_s2.json
+--controller tabpfn --strategy recent --seed_ids 0 --workers 6 --T 100 --video_dir videos --out demo_tabpfn_recent_s0.json
+--controller tabpfn --strategy recent --seed_ids 1 --workers 6 --T 100 --video_dir videos --out demo_tabpfn_recent_s1.json
+--controller tabpfn --strategy recent --seed_ids 2 --workers 6 --T 100 --video_dir videos --out demo_tabpfn_recent_s2.json
+--controller tabpfn --strategy random --seed_ids 0 --workers 6 --T 100 --video_dir videos --out demo_tabpfn_random_s0.json
+--controller tabpfn --strategy random --seed_ids 1 --workers 6 --T 100 --video_dir videos --out demo_tabpfn_random_s1.json
+--controller tabpfn --strategy random --seed_ids 2 --workers 6 --T 100 --video_dir videos --out demo_tabpfn_random_s2.json

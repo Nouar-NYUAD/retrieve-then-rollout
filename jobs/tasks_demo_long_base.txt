@@ -1,0 +1,3 @@
+--controller oracle --strategy - --seed_ids 0 1 2 --T 1200 --video_dir videos_long --out long_oracle.json
+--controller random --strategy - --seed_ids 0 1 2 --T 1200 --video_dir videos_long --out long_random.json
+--controller mlp --strategy - --seed_ids 0 1 2 --T 1200 --video_dir videos_long --out long_mlp.json

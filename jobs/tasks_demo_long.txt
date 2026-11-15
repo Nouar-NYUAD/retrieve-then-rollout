@@ -1,0 +1,9 @@
+--controller tabpfn --strategy trajretrieval --seed_ids 0 --workers 6 --tabpfn_version v3.5-fast --replan_every 2 --T 1200 --video_dir videos_long --out long_tabpfn_trajretrieval_s0.json
+--controller tabpfn --strategy trajretrieval --seed_ids 1 --workers 6 --tabpfn_version v3.5-fast --replan_every 2 --T 1200 --video_dir videos_long --out long_tabpfn_trajretrieval_s1.json
+--controller tabpfn --strategy trajretrieval --seed_ids 2 --workers 6 --tabpfn_version v3.5-fast --replan_every 2 --T 1200 --video_dir videos_long --out long_tabpfn_trajretrieval_s2.json
+--controller tabpfn --strategy recent --seed_ids 0 --workers 6 --tabpfn_version v3.5-fast --replan_every 2 --T 1200 --video_dir videos_long --out long_tabpfn_recent_s0.json
+--controller tabpfn --strategy recent --seed_ids 1 --workers 6 --tabpfn_version v3.5-fast --replan_every 2 --T 1200 --video_dir videos_long --out long_tabpfn_recent_s1.json
+--controller tabpfn --strategy recent --seed_ids 2 --workers 6 --tabpfn_version v3.5-fast --replan_every 2 --T 1200 --video_dir videos_long --out long_tabpfn_recent_s2.json
+--controller tabpfn --strategy random --seed_ids 0 --workers 6 --tabpfn_version v3.5-fast --replan_every 2 --T 1200 --video_dir videos_long --out long_tabpfn_random_s0.json
+--controller tabpfn --strategy random --seed_ids 1 --workers 6 --tabpfn_version v3.5-fast --replan_every 2 --T 1200 --video_dir videos_long --out long_tabpfn_random_s1.json
+--controller tabpfn --strategy random --seed_ids 2 --workers 6 --tabpfn_version v3.5-fast --replan_every 2 --T 1200 --video_dir videos_long --out long_tabpfn_random_s2.json

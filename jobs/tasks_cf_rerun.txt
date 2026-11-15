@@ -1,0 +1,45 @@
+--system halfcheetah --seed_ids 0 --explore_frac 0.0 --out cf_halfcheetah_ex0.0_s0.json
+--system halfcheetah --seed_ids 1 --explore_frac 0.0 --out cf_halfcheetah_ex0.0_s1.json
+--system halfcheetah --seed_ids 2 --explore_frac 0.0 --out cf_halfcheetah_ex0.0_s2.json
+--system halfcheetah --seed_ids 3 --explore_frac 0.0 --out cf_halfcheetah_ex0.0_s3.json
+--system halfcheetah --seed_ids 4 --explore_frac 0.0 --out cf_halfcheetah_ex0.0_s4.json
+--system hopper --seed_ids 0 --explore_frac 0.0 --out cf_hopper_ex0.0_s0.json
+--system hopper --seed_ids 1 --explore_frac 0.0 --out cf_hopper_ex0.0_s1.json
+--system hopper --seed_ids 2 --explore_frac 0.0 --out cf_hopper_ex0.0_s2.json
+--system hopper --seed_ids 3 --explore_frac 0.0 --out cf_hopper_ex0.0_s3.json
+--system hopper --seed_ids 4 --explore_frac 0.0 --out cf_hopper_ex0.0_s4.json
+--system walker2d --seed_ids 0 --explore_frac 0.0 --out cf_walker2d_ex0.0_s0.json
+--system walker2d --seed_ids 1 --explore_frac 0.0 --out cf_walker2d_ex0.0_s1.json
+--system walker2d --seed_ids 2 --explore_frac 0.0 --out cf_walker2d_ex0.0_s2.json
+--system walker2d --seed_ids 3 --explore_frac 0.0 --out cf_walker2d_ex0.0_s3.json
+--system walker2d --seed_ids 4 --explore_frac 0.0 --out cf_walker2d_ex0.0_s4.json
+--system halfcheetah --seed_ids 0 --explore_frac 0.05 --out cf_halfcheetah_ex0.05_s0.json
+--system halfcheetah --seed_ids 1 --explore_frac 0.05 --out cf_halfcheetah_ex0.05_s1.json
+--system halfcheetah --seed_ids 2 --explore_frac 0.05 --out cf_halfcheetah_ex0.05_s2.json
+--system halfcheetah --seed_ids 3 --explore_frac 0.05 --out cf_halfcheetah_ex0.05_s3.json
+--system halfcheetah --seed_ids 4 --explore_frac 0.05 --out cf_halfcheetah_ex0.05_s4.json
+--system hopper --seed_ids 0 --explore_frac 0.05 --out cf_hopper_ex0.05_s0.json
+--system hopper --seed_ids 1 --explore_frac 0.05 --out cf_hopper_ex0.05_s1.json
+--system hopper --seed_ids 2 --explore_frac 0.05 --out cf_hopper_ex0.05_s2.json
+--system walker2d --seed_ids 0 --explore_frac 0.05 --out cf_walker2d_ex0.05_s0.json
+--system walker2d --seed_ids 1 --explore_frac 0.05 --out cf_walker2d_ex0.05_s1.json
+--system walker2d --seed_ids 2 --explore_frac 0.05 --out cf_walker2d_ex0.05_s2.json
+--system walker2d --seed_ids 3 --explore_frac 0.05 --out cf_walker2d_ex0.05_s3.json
+--system walker2d --seed_ids 4 --explore_frac 0.05 --out cf_walker2d_ex0.05_s4.json
+--system pendulum --gain 1 --sigma 1.0 --seed_ids 3 --out cf_pendulum_g1_sig1.0_s3.json
+--system pendulum --gain 1 --sigma 1.0 --seed_ids 4 --out cf_pendulum_g1_sig1.0_s4.json
+--system pendulum --gain 0 --sigma 1.0 --seed_ids 0 --out cf_pendulum_g0_sig1.0_s0.json
+--system pendulum --gain 0 --sigma 1.0 --seed_ids 1 --out cf_pendulum_g0_sig1.0_s1.json
+--system pendulum --gain 0 --sigma 1.0 --seed_ids 2 --out cf_pendulum_g0_sig1.0_s2.json
+--system pendulum --gain 0 --sigma 1.0 --seed_ids 3 --out cf_pendulum_g0_sig1.0_s3.json
+--system pendulum --gain 0 --sigma 1.0 --seed_ids 4 --out cf_pendulum_g0_sig1.0_s4.json
+--system pendulum --gain 1 --sigma 0.0 --explore_frac 0.05 --seed_ids 0 --out cf_pendulum_g1_sig0.0_ex0.05_s0.json
+--system pendulum --gain 1 --sigma 0.0 --explore_frac 0.05 --seed_ids 1 --out cf_pendulum_g1_sig0.0_ex0.05_s1.json
+--system pendulum --gain 1 --sigma 0.0 --explore_frac 0.05 --seed_ids 2 --out cf_pendulum_g1_sig0.0_ex0.05_s2.json
+--system pendulum --gain 1 --sigma 0.0 --explore_frac 0.05 --seed_ids 3 --out cf_pendulum_g1_sig0.0_ex0.05_s3.json
+--system pendulum --gain 1 --sigma 0.0 --explore_frac 0.05 --seed_ids 4 --out cf_pendulum_g1_sig0.0_ex0.05_s4.json
+--system pendulum --gain 1 --sigma 0.1 --explore_frac 0.05 --seed_ids 0 --out cf_pendulum_g1_sig0.1_ex0.05_s0.json
+--system pendulum --gain 1 --sigma 0.1 --explore_frac 0.05 --seed_ids 1 --out cf_pendulum_g1_sig0.1_ex0.05_s1.json
+--system pendulum --gain 1 --sigma 0.1 --explore_frac 0.05 --seed_ids 2 --out cf_pendulum_g1_sig0.1_ex0.05_s2.json
+--system pendulum --gain 1 --sigma 0.1 --explore_frac 0.05 --seed_ids 3 --out cf_pendulum_g1_sig0.1_ex0.05_s3.json
+--system pendulum --gain 1 --sigma 0.1 --explore_frac 0.05 --seed_ids 4 --out cf_pendulum_g1_sig0.1_ex0.05_s4.json

@@ -1,0 +1,27 @@
+--task cartpole --models tabpfn --strategies random --seed_ids 2 --tabpfn_fit_mode fit_preprocessors --out plan_cartpole_random_s2.json
+--task cartpole --models tabpfn --strategies recent --seed_ids 2 --tabpfn_fit_mode fit_preprocessors --out plan_cartpole_recent_s2.json
+--task cartpole --models tabpfn --strategies retrieval --seed_ids 2 --tabpfn_fit_mode fit_preprocessors --out plan_cartpole_retrieval_s2.json
+--task cartpole --models tabpfn --strategies trajretrieval --seed_ids 2 --tabpfn_fit_mode fit_preprocessors --out plan_cartpole_trajretrieval_s2.json
+--task cartpole --models tabpfn --strategies hybrid --seed_ids 2 --tabpfn_fit_mode fit_preprocessors --out plan_cartpole_hybrid_s2.json
+--task cartpole --models tabpfn --strategies random --seed_ids 3 --tabpfn_fit_mode fit_preprocessors --out plan_cartpole_random_s3.json
+--task cartpole --models tabpfn --strategies recent --seed_ids 3 --tabpfn_fit_mode fit_preprocessors --out plan_cartpole_recent_s3.json
+--task cartpole --models tabpfn --strategies retrieval --seed_ids 3 --tabpfn_fit_mode fit_preprocessors --out plan_cartpole_retrieval_s3.json
+--task cartpole --models tabpfn --strategies trajretrieval --seed_ids 3 --tabpfn_fit_mode fit_preprocessors --out plan_cartpole_trajretrieval_s3.json
+--task cartpole --models tabpfn --strategies hybrid --seed_ids 3 --tabpfn_fit_mode fit_preprocessors --out plan_cartpole_hybrid_s3.json
+--task cartpole --models tabpfn --strategies random --seed_ids 4 --tabpfn_fit_mode fit_preprocessors --out plan_cartpole_random_s4.json
+--task cartpole --models tabpfn --strategies recent --seed_ids 4 --tabpfn_fit_mode fit_preprocessors --out plan_cartpole_recent_s4.json
+--task cartpole --models tabpfn --strategies retrieval --seed_ids 4 --tabpfn_fit_mode fit_preprocessors --out plan_cartpole_retrieval_s4.json
+--task cartpole --models tabpfn --strategies trajretrieval --seed_ids 4 --tabpfn_fit_mode fit_preprocessors --out plan_cartpole_trajretrieval_s4.json
+--task cartpole --models tabpfn --strategies hybrid --seed_ids 4 --tabpfn_fit_mode fit_preprocessors --out plan_cartpole_hybrid_s4.json
+--task acrobot --models tabpfn --strategies random --seed_ids 0 --P 40 --T_ep 250 --tabpfn_fit_mode fit_preprocessors --out plan_acrobot_random_s0.json
+--task acrobot --models tabpfn --strategies retrieval --seed_ids 0 --P 40 --T_ep 250 --tabpfn_fit_mode fit_preprocessors --out plan_acrobot_retrieval_s0.json
+--task acrobot --models tabpfn --strategies trajretrieval --seed_ids 0 --P 40 --T_ep 250 --tabpfn_fit_mode fit_preprocessors --out plan_acrobot_trajretrieval_s0.json
+--task acrobot --models tabpfn --strategies hybrid --seed_ids 0 --P 40 --T_ep 250 --tabpfn_fit_mode fit_preprocessors --out plan_acrobot_hybrid_s0.json
+--task acrobot --models tabpfn --strategies random --seed_ids 1 --P 40 --T_ep 250 --tabpfn_fit_mode fit_preprocessors --out plan_acrobot_random_s1.json
+--task acrobot --models tabpfn --strategies retrieval --seed_ids 1 --P 40 --T_ep 250 --tabpfn_fit_mode fit_preprocessors --out plan_acrobot_retrieval_s1.json
+--task acrobot --models tabpfn --strategies trajretrieval --seed_ids 1 --P 40 --T_ep 250 --tabpfn_fit_mode fit_preprocessors --out plan_acrobot_trajretrieval_s1.json
+--task acrobot --models tabpfn --strategies hybrid --seed_ids 1 --P 40 --T_ep 250 --tabpfn_fit_mode fit_preprocessors --out plan_acrobot_hybrid_s1.json
+--task acrobot --models tabpfn --strategies random --seed_ids 2 --P 40 --T_ep 250 --tabpfn_fit_mode fit_preprocessors --out plan_acrobot_random_s2.json
+--task acrobot --models tabpfn --strategies retrieval --seed_ids 2 --P 40 --T_ep 250 --tabpfn_fit_mode fit_preprocessors --out plan_acrobot_retrieval_s2.json
+--task acrobot --models tabpfn --strategies trajretrieval --seed_ids 2 --P 40 --T_ep 250 --tabpfn_fit_mode fit_preprocessors --out plan_acrobot_trajretrieval_s2.json
+--task acrobot --models tabpfn --strategies hybrid --seed_ids 2 --P 40 --T_ep 250 --tabpfn_fit_mode fit_preprocessors --out plan_acrobot_hybrid_s2.json
