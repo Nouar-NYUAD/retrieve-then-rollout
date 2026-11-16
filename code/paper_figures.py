@@ -479,6 +479,9 @@ def fig_scaling(macros):
     macros["ScaleRetSmallErr"] = f"{ret[0][1]['err50']:.2f}"; macros["ScaleRetLargeErr"] = f"{ret[-1][1]['err50']:.2f}"
     macros["ScaleFullSmallErr"] = f"{full[0][1]['err50']:.2f}"; macros["ScaleFullLargeErr"] = f"{full[-1][1]['err50']:.2f}"
     macros["ScaleNSeeds"] = str(min(r["n_seeds"] for _, r in full + ret))
+    macros["ScaleLargeSpeedup"] = f"{full[-1][1]['secs_per_step'] / ret[-1][1]['secs_per_step']:.0f}"
+    macros["ScaleRetLargeSec"] = f"{ret[-1][1]['secs_per_step']:.1f}"
+    macros["ScaleFullLargeSeeds"] = str(full[-1][1]["n_seeds"]); macros["ScaleRetLargeSeeds"] = str(ret[-1][1]["n_seeds"])
     f80, r80 = S.get((80, "full"), {}), S.get((80, "retrieval"), {})          # largest pool with all seeds
     if "pool_rows" in f80 and "pool_rows" in r80:
         macros["ScaleMidRows"] = f"{f80['pool_rows'] / 1000:.0f}"; macros["ScaleMidSeeds"] = str(min(f80["n_seeds"], r80["n_seeds"]))
