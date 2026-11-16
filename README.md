@@ -1,106 +1,141 @@
-# Retrieve, Then Roll Out: Context Selection for In-Context World Models
+<div align="center">
 
-Code, results and demos for the paper *Retrieve, Then Roll Out: Context Selection for In-Context World
-Models* (Nouar AlDahoul, New York University Abu Dhabi; in preparation for ICWM 2027).
+# Retrieve, Then Roll Out
+
+### Context selection for in-context world models
+
+**Nouar AlDahoul** · New York University Abu Dhabi
+
+![status](https://img.shields.io/badge/paper-in%20preparation%20for%20ICWM%202027-6250d6)
+![python](https://img.shields.io/badge/python-3.11-2a78d6)
+![tabpfn](https://img.shields.io/badge/TabPFN-v2%20%7C%20v3.5%20%7C%20v3.5--fast-1baf7a)
+![mujoco](https://img.shields.io/badge/MuJoCo-4.0-eb6834)
+![license](https://img.shields.io/badge/license-MIT-lightgrey)
+
+<img src="demo/walker2d_s0_pred.gif" width="95%" alt="Walker2d: real motion vs. TabPFN with retrieved context vs. TabPFN with the recent window"/>
+
+<sub><b>Walker2d, open-loop rollout from the same start with the same recorded actions</b> (5× slow motion).
+Left: real motion · Middle: TabPFN + <b>retrieved context (ours)</b> · Right: TabPFN + recent window (prior work).
+Error after 100 steps: <b>1.71</b> vs 30.3.</sub>
+
+</div>
+
+---
+
+## TL;DR
 
 Pretrained tabular foundation models such as [TabPFN](https://github.com/PriorLabs/TabPFN) can act as
-world models without any training: given observed transitions in context, they predict the next state of
-a dynamical system. With a context made of the most recent transitions, their multi-step rollouts
-degrade quickly. We show that **which** transitions enter the context matters more than how many:
-retrieving the transitions nearest to the current state, and re-selecting them at every rollout step,
-turns in-context foundation models into accurate training-free world models.
+**training-free world models**: given observed transitions in context, they predict the next state of a
+dynamical system. With the usual *recent-window* context their rollouts drift and collapse.
+**We show that *which* transitions enter the context matters more than how many:** retrieving the
+transitions nearest to the current state, and re-selecting them at every rollout step, turns in-context
+foundation models into accurate world models — at a cost that stays constant as data grow.
 
-## Demo: what the world model predicts
+## Highlights
 
-Open-loop rollouts from the same start state with the same recorded actions (D4RL test episode, seed 0).
-Left: the real motion. Middle: TabPFN with **retrieved context (ours)**. Right: TabPFN with the recent
-window used in prior work. The number in each panel is the normalised rollout error.
+| | Result |
+|---|---|
+| 🎯 **Retrieval fixes rollouts** | **315×** lower error than the recent window on Lorenz-63, **25×** on a forced pendulum, **7.9×** on Hopper, **4.9×** on Walker2d (10/10 seeds) |
+| 🤖 **Beats a classic local GP where it matters** | **8.2×** on Hopper, **4.5×** on Walker2d, **3.2×** on real river flow (CAMELS, 17/18 basins) |
+| 🧱 **Explains when the GP wins** | GP is 93× better on a smooth noise-free pendulum — add impacts and **ours wins 12×** (5/5 seeds) |
+| 🔀 **Counterfactual action effects** | 5% exploratory data roughly halves the action-effect error with retrieval; the recent window never benefits |
+| ⏱️ **Constant cost** | full-pool context grows from 3.9 s to **352 s** per step as the pool grows to 75k transitions; retrieval stays at **4–8 s** and **0.9 GB** |
+| 🔁 **General** | holds for TabPFN v2 / v3.5 / v3.5-fast and DynaPFN-style features; 9 systems from chaos to robots to hydrology |
 
-**Walker2d** (5x slow motion): error after 100 steps 1.71 with retrieval vs 30.3 with the recent window
+## More rollouts
 
-![Walker2d](demo/walker2d_s0_pred.gif)
+<table>
+<tr>
+<td align="center" width="50%"><img src="demo/hopper_s0_pred.gif" width="100%"/><br/><sub><b>Hopper</b> (5× slow motion) · error after 100 steps <b>1.96</b> vs 5.37</sub></td>
+<td align="center" width="50%"><img src="demo/halfcheetah_s0_pred.gif" width="100%"/><br/><sub><b>HalfCheetah</b> (real time) · 0.32 vs 0.48 — a periodic gait keeps the recent window relevant</sub></td>
+</tr>
+</table>
 
-**Hopper** (5x slow motion): error after 100 steps 1.96 vs 5.37
+Full-resolution videos and per-horizon errors: [`demo/`](demo/).
 
-![Hopper](demo/hopper_s0_pred.gif)
+## Where foundation models win
 
-**HalfCheetah** (real time): 0.32 vs 0.48 - its periodic gait keeps the recent window relevant
+<p align="center"><img src="figures/regime.png" width="95%"/></p>
 
-![HalfCheetah](demo/halfcheetah_s0_pred.gif)
+**(a)** Retrieved vs recent-window context for the same model. **(b)** Local Gaussian process vs our
+foundation models, both with retrieved context — the GP wins only on noise-free simulated ODEs.
 
-Full-resolution videos: [`demo/*.mp4`](demo/); errors per horizon: [`demo/*.json`](demo/).
+<p align="center"><img src="figures/robots.png" width="95%"/></p>
 
-## Main findings
+Rollout error over the horizon on D4RL locomotion (left) and the distribution of Nash–Sutcliffe
+efficiency over 18 CAMELS river basins (right): solid = ours, dashed = baselines.
 
-* **Retrieval makes in-context world models work.** Relative to the recent window, retrieved context
-  reduces TabPFN's rollout error by a factor of 315 on Lorenz-63 and 25 on a forced pendulum (300 steps,
-  10/10 seeds), and by 7.9 on Hopper and 4.9 on Walker2d (100 steps, 10/10 seeds). The gain holds for
-  TabPFN v2, v3.5 and v3.5-fast, and for DynaPFN-style features.
-* **Where foundation models beat a classic local Gaussian process.** On contact-rich D4RL locomotion and
-  real river flow (CAMELS), TabPFN-family models with retrieved context are more accurate than a local
-  Gaussian process (a GP fitted to the same retrieved transitions) on 9-10 of 10 seeds and 17 of 18
-  basins (up to 8.2x on Hopper). The local GP wins only on noise-free simulated ODEs, which it
-  interpolates almost exactly; with observation noise or impacts its advantage disappears.
-* **Counterfactual action effects.** With single-policy data, every model fits the logged transitions
-  but not the effect of other actions. A small amount of exploratory data fixes this for contexts that
-  can reach it - retrieval or the full pool - but never for the recent window.
-* **Honest limits.** On smooth noise-free ODEs the local GP is more accurate (TabPFN has a precision
-  floor); on Lorenz-96 retrieved contexts are too narrow; closed-loop sampling-based planning on the D4RL
-  robots stays far below the planner with the true dynamics (which itself falls on Hopper), so
-  retrieval's gains in prediction do not carry over to control there.
+<details>
+<summary><b>More figures</b> (noise × impacts, cost, counterfactuals, diagnostics)</summary>
 
-![Where each choice wins](figures/regime.png)
+<p align="center"><img src="figures/wall.png" width="90%"/></p>
+<p align="center"><img src="figures/scaling.png" width="90%"/></p>
+<p align="center"><img src="figures/counterfactual.png" width="90%"/></p>
+<p align="center"><img src="figures/diagnostics.png" width="90%"/></p>
 
-![Locomotion and river flow](figures/robots.png)
+</details>
+
+## Honest limitations
+
+- On **smooth, noise-free ODEs** a local Gaussian process is more accurate (TabPFN has a precision floor).
+- On **Lorenz-96**, retrieved contexts become too narrow and a larger context is better.
+- With a very large pool, the **full pool can be more accurate** — at 48× the cost per step.
+- **Closed-loop control** with a sampling-based planner stays far below the true-dynamics planner on the
+  D4RL robots (which itself falls on Hopper): retrieval improves prediction there, not control.
+
+## Quick start
+
+```bash
+git clone https://github.com/Nouar-NYUAD/retrieve-then-rollout.git
+cd retrieve-then-rollout/code
+
+# regenerate every table, figure and number of the paper from the raw results
+mkdir -p results && tar xzf ../results/results_jsons.tar.gz -C results
+python paper_assets.py
+
+# one experiment: TabPFN on Hopper with retrieved vs recent-window context
+python study.py --system hopper --seed_ids 0 --models tabpfn --strategies retrieval recent \
+    --H 100 --n_train 10 --t0_min 100 --horizon 100 --n_starts 3 --data_dir /path/to/d4rl_npz --out hopper_s0.json
+```
+
+**Environment** (NVIDIA A100 80 GB): Python 3.11.17, `tabpfn==9.2.0` (TabPFN v2, v3.5 and v3.5-fast
+weights), `torch==2.14.1` (CUDA 13.0), `numpy==2.4.6`, `scipy==1.17.1`, `scikit-learn==1.9.1`,
+`matplotlib==3.11.2`; for the robots `gymnasium==1.4.0`, `mujoco==4.0.1`, `imageio==2.38.1`.
+**Data:** D4RL `hopper / halfcheetah / walker2d-medium-v2` and 18 CAMELS basins, prepared with
+`code/prep_data.py` (public datasets, not redistributed here).
 
 ## Repository layout
 
 | Path | Content |
 |---|---|
-| `code/study.py` | Main experiment: pools, context strategies (recent / random / full / retrieval), models (TabPFN, DynaPFN-style features, GP, MLP, local linear, kNN, context parroting), rollouts and metrics |
-| `code/pilot.py` | Simulators (Lorenz-63, pendulum), model wrappers, context selection |
-| `code/mpc.py` | CEM model-predictive control: cart-pole and acrobot swing-up, trajectory retrieval |
-| `code/cheetah_mpc.py` | CEM-MPC on MuJoCo HalfCheetah / Hopper / Walker2d with a TabPFN world model |
-| `code/counterfactual.py` | Counterfactual (interventional) evaluation with the simulator as ground truth |
-| `code/scaling.py` | Cost and accuracy of retrieval vs the full pool as the pool grows |
-| `code/predict_video.py`, `code/replay_video.py` | Prediction-comparison videos; re-rendering from saved actions |
-| `code/diag.py` | Diagnostics: precision floor, context width, GP on contact transitions |
-| `code/analyze_full.py`, `code/paper_*.py` | Seed-level analysis, all paper tables, figures and in-text numbers |
-| `code/regtest/` | Regression and correctness checks (simulator consistency, GP fixes, counterfactual metrics, ...) |
-| `jobs/` | Slurm job scripts and task lists used on the NYU Abu Dhabi Jubail HPC cluster |
-| `results/results_jsons.tar.gz` | All raw result files (one JSON per task) |
-| `figures/` | Paper figures (PDF and PNG) |
+| [`code/study.py`](code/study.py) | Main experiment: pools, context strategies (recent / random / full / retrieval), all models, rollouts, metrics |
+| [`code/pilot.py`](code/pilot.py) | Simulators, model wrappers, context selection |
+| [`code/mpc.py`](code/mpc.py), [`code/cheetah_mpc.py`](code/cheetah_mpc.py) | CEM model-predictive control: cart-pole, acrobot, MuJoCo robots |
+| [`code/counterfactual.py`](code/counterfactual.py) | Counterfactual action-effect test with the simulator as ground truth |
+| [`code/scaling.py`](code/scaling.py) | Cost and accuracy of retrieval vs the full pool as data grow |
+| [`code/predict_video.py`](code/predict_video.py) | The prediction-comparison videos above |
+| [`code/diag.py`](code/diag.py) | Diagnostics: precision floor, context width, contact transitions |
+| [`code/paper_*.py`](code/), [`code/analyze_full.py`](code/analyze_full.py) | Seed-level analysis, every table, figure and number in the paper |
+| [`code/regtest/`](code/regtest/) | Correctness checks (simulator consistency, GP fixes, counterfactual metrics, …) |
+| [`jobs/`](jobs/) | Slurm job scripts and task lists (NYU Abu Dhabi Jubail HPC) |
+| [`results/`](results/) | All raw result files (one JSON per task) |
 
-## Reproducing
-
-Environment used (NVIDIA A100 80 GB): Python 3.11.17, `tabpfn==9.2.0` (with the TabPFN v2, v3.5 and
-v3.5-fast weights), `torch==2.14.1` (CUDA 13.0), `numpy==2.4.6`, `scipy==1.17.1`, `scikit-learn==1.9.1`,
-`matplotlib==3.11.2`; for the robot simulation `gymnasium==1.4.0`, `mujoco==4.0.1`, `imageio==2.38.1`.
-
-1. Data: D4RL `hopper/halfcheetah/walker2d-medium-v2` and 18 CAMELS basins, converted with
-   `code/prep_data.py` (public datasets; not redistributed here).
-2. Experiments: each line of `jobs/tasks_*.txt` is one call of `code/study.py` (or the script named in
-   the job file); `jobs/pack.sbatch` runs a task file on one GPU. Paths in the job files point to our
-   cluster and need to be adapted.
-3. Analysis: unpack `results/results_jsons.tar.gz` into `code/results/` and run
-   `python paper_assets.py` from `code/` - it regenerates every table, figure and number in the paper.
-
-Seeds are the unit of analysis: rollout starts of a seed are averaged (geometric mean) and methods are
+Seeds are the unit of analysis: rollout starts of a seed are averaged (geometric mean), and methods are
 compared with paired Wilcoxon signed-rank tests over seeds.
 
 ## Citation
 
-```
+```bibtex
 @misc{aldahoul2026retrieve,
   title  = {Retrieve, Then Roll Out: Context Selection for In-Context World Models},
   author = {AlDahoul, Nouar},
   year   = {2026},
-  note   = {In preparation}
+  note   = {In preparation for ICWM 2027}
 }
 ```
 
 ## License
 
-Code: MIT (see `LICENSE`). The DynaPFN-style baseline re-implements the feature library of
-[DynaPFN](https://github.com/chiararov/DynaPFN) (MIT). D4RL, CAMELS, TabPFN, Gymnasium and MuJoCo are
-used under their own licenses.
+Code released under the [MIT license](LICENSE). The DynaPFN-style baseline re-implements the feature
+library of [DynaPFN](https://github.com/chiararov/DynaPFN) (MIT). D4RL, CAMELS, TabPFN, Gymnasium and
+MuJoCo are used under their own licenses.
