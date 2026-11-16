@@ -474,7 +474,7 @@ def fig_scaling(macros):
     macros["ScaleRetMinSec"] = f"{min(r['secs_per_step'] for _, r in ret):.1f}"
     macros["ScaleRetMaxSec"] = f"{max(r['secs_per_step'] for _, r in ret):.1f}"
     macros["ScaleRetGPU"] = f"{np.median([r['gpu_gb'] for _, r in ret]):.1f}"
-    macros["ScaleFullGPU"] = f"{np.median([r['gpu_gb'] for _, r in full]):.0f}"
+    macros["ScaleFullGPU"] = f"{min(r['gpu_gb'] for _, r in full):.0f}--{max(r['gpu_gb'] for _, r in full):.0f}"
     macros["ScaleRetLargeRows"] = f"{ret[-1][0] / 1000:.0f}"
     macros["ScaleRetSmallErr"] = f"{ret[0][1]['err50']:.2f}"; macros["ScaleRetLargeErr"] = f"{ret[-1][1]['err50']:.2f}"
     macros["ScaleFullSmallErr"] = f"{full[0][1]['err50']:.2f}"; macros["ScaleFullLargeErr"] = f"{full[-1][1]['err50']:.2f}"
