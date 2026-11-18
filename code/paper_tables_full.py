@@ -23,13 +23,18 @@ def fmt(x):
     if x >= 100:
         return f"{x:.0f}"
     if x >= 0.01:
-        return f"{x:.3f}".rstrip("0").rstrip(".") if x < 1 else f"{x:.2f}"
+        return f"{x:.3f}" if x < 1 else f"{x:.2f}"     # three decimals below 1 (0.020, 0.240)
     m, e = f"{x:.1e}".split("e")
     return rf"${m}\times10^{{{int(e)}}}$"
 
 
+def minus(t):
+    """typeset a leading minus sign as a true minus in LaTeX ($-8.71$, not a hyphen)"""
+    return f"${t}$" if t.startswith("-") else t
+
+
 def fmt_nse(x):
-    return f"{x:.2f}" if x > -10 + 1e-9 else r"$<\!-10$"
+    return minus(f"{x:.2f}") if x > -10 + 1e-9 else r"$<\!-10$"
 
 
 def full_rows():
@@ -94,6 +99,7 @@ def robots(macros, rows):
             ("DynaPFN + retrieval", ("retrieval", 100, "dynapfn"), True),
             ("Local linear (retrieval)", ("retrieval", 100, "locallin"), False),
             ("TabPFN, full pool", FULL, False),
+            ("TabPFN, random context", ("random", 100, "tabpfn"), False),
             ("Trained MLP", ("trained", 0, "mlp"), False),
             ("DynaPFN, recent window", ("recent", 100, "dynapfn"), False),
             ("TabPFN, recent window", REC, False),
@@ -107,10 +113,18 @@ def robots(macros, rows):
         paired_macros(macros, f"RetVsRecent{key}", T, c, RET, REC)
         paired_macros(macros, f"DynaRetVsRecent{key}", T, c, ("retrieval", 100, "dynapfn"), ("recent", 100, "dynapfn"))
         paired_macros(macros, f"DynaRetVsTabRet{key}", T, c, ("retrieval", 100, "dynapfn"), RET)
+        paired_macros(macros, f"RetVsRandom{key}", T, c, RET, ("random", 100, "tabpfn"))   # same H, same pool
+    # one phrase for the two robots of section 5.1 ("10/10 seeds each, p = 0.002" when they agree)
+    hb, wb = macros["RetVsRecentHopperBetter"], macros["RetVsRecentWalkerBetter"]
+    hp, wp = macros["RetVsRecentHopperP"], macros["RetVsRecentWalkerP"]
+    macros["RetVsRecentRobotsStats"] = (f"{hb} seeds each, $p={hp}$" if (hb, hp) == (wb, wp)
+                                        else f"{hb} and {wb} seeds, $p={hp}$ and ${wp}$")
     for lab, arm in [("DynaRet", ("retrieval", 100, "dynapfn")), ("TabRet", RET), ("TabFull", FULL),
                      ("TabRecent", REC), ("DynaRecent", ("recent", 100, "dynapfn")), ("GPRet", ("retrieval", 100, "gp")),
                      ("MLP", ("trained", 0, "mlp"))]:
-        macros["CamelsNSE" + lab] = f"{med(N, cam, arm)[0]:.2f}"
+        macros["CamelsNSE" + lab] = minus(f"{med(N, cam, arm)[0]:.2f}")
+        v = [x for x in N.get((cam, arm), {}).values()]
+        macros["CamelsNegNSE" + lab] = str(int(np.sum(~(np.array(v) >= 0))))   # basins with NSE < 0 (or diverged)
     for d, w in ((10, "Ten"), (20, "Twenty"), (40, "Forty")):
         c = f"lorenz96(d={d})+nt4"
         macros[f"LNSix{w}GPRet"] = fmt(med(T, c, ("retrieval", 100, "gp"))[0])
@@ -123,7 +137,7 @@ def robots(macros, rows):
 
 def noise(macros, rows):
     T = A.per_seed(rows, "300"); seeds = set(range(5))    # lagged runs use seeds 0-4: like with like
-    cols = [("lorenz+noise0.05+nt4", "Lorenz, 1 lag"), ("lorenz+noise0.05+lags4+nt4", "4 lags"),
+    cols = [("lorenz+noise0.05+nt4", "Lorenz-63, 1 lag"), ("lorenz+noise0.05+lags4+nt4", "4 lags"),
             ("pendulum+noise0.05+nt4", "Pendulum, 1 lag"), ("pendulum+noise0.05+lags4+nt4", "4 lags")]
     arms = [("Local GP (GP + retrieval)", ("retrieval", 500, "gp"), False),
             ("TabPFN + retrieval", ("retrieval", 500, "tabpfn"), True),
@@ -167,11 +181,11 @@ def ablations(macros, rows):
     L.append(r"\midrule")
     for name, c in [("Lorenz-63", "lorenz+nt4"), ("Pendulum", "pendulum+nt4"), ("Hopper", "hopper+nt10"),
                     ("HalfCheetah", "halfcheetah+nt10")]:
-        for ver in ("v2", "v3.5-fast", "v3.5"):
+        for ver, vlab in (("v2", "TabPFN v2"), ("v3.5-fast", "TabPFN-3.5-fast"), ("v3.5", "TabPFN-3.5")):
             tag = "tabpfn" if ver == "v3.5" else f"tabpfn[{ver}]"
             vs = [g(c, (st, H, tag)) for st, H, _ in (RET, REC)]
             if np.all(np.isfinite(vs)):
-                L.append(rf"Version, {name} & TabPFN {ver} & {fmt(vs[0])} & {fmt(vs[1])} & \\")
+                L.append(rf"Version, {name} & {vlab} & {fmt(vs[0])} & {fmt(vs[1])} & \\")
     L += [r"\bottomrule", r"\end{tabular}"]
     (PAPER / "tables" / "ablation.tex").write_text("\n".join(L) + "\n")
     for sys_, k in [("lorenz", "Lorenz"), ("pendulum", "Pendulum")]:
@@ -184,14 +198,14 @@ def planning(macros):
     for f in glob.glob(f"{SYNC}/plan/plan*.json"):
         for r in json.load(open(f))["results"]:
             acc[(r["task"], r["model"], r["strategy"])].append((r["seed"], r["frac_upright"]))
-    arms = [("Oracle (true dynamics)", "oracle", "-"),
+    arms = [("Planner with the true dynamics", "oracle", "-"),
             (r"\textbf{TabPFN, trajectory retrieval (ours)}", "tabpfn", "trajretrieval"),
             (r"\textbf{TabPFN, retrieval (ours)}", "tabpfn", "retrieval"),
             (r"\textbf{TabPFN, hybrid (ours)}", "tabpfn", "hybrid"), ("TabPFN, recent window", "tabpfn", "recent"),
-            ("TabPFN, random", "tabpfn", "random"),
+            ("TabPFN, random context", "tabpfn", "random"),
             ("Local linear, trajectory retrieval", "locallin", "trajretrieval"),
             ("Local linear, retrieval", "locallin", "retrieval"), ("Local linear, recent window", "locallin", "recent"),
-            ("Local linear, random", "locallin", "random")]
+            ("Local linear, random context", "locallin", "random")]
     L = [r"\begin{tabular}{lcc}", r"\toprule", r"Planner model and context & Cart-pole & Acrobot \\", r"\midrule"]
     for lab, m, st in arms:
         cells = []
@@ -203,7 +217,8 @@ def planning(macros):
     (PAPER / "tables" / "planning.tex").write_text("\n".join(L) + "\n")
     for task, k in (("cartpole", "Cartpole"), ("acrobot", "Acrobot")):
         for lab, m, st in [("Oracle", "oracle", "-"), ("TabRet", "tabpfn", "retrieval"), ("TabTraj", "tabpfn", "trajretrieval"),
-                           ("TabRecent", "tabpfn", "recent"), ("LinTraj", "locallin", "trajretrieval"),
+                           ("TabRecent", "tabpfn", "recent"), ("TabRandom", "tabpfn", "random"),
+                           ("TabHybrid", "tabpfn", "hybrid"), ("LinTraj", "locallin", "trajretrieval"),
                            ("LinRecent", "locallin", "recent")]:
             v = acc.get((task, m, st), [])
             macros[f"Plan{k}{lab}"] = f"{np.mean([u for _, u in v]):.2f}" if v else "--"

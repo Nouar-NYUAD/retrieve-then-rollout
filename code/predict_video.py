@@ -109,7 +109,7 @@ def main():
     name = f"{a.out}/{a.env}_s{a.seed}_pred.mp4"
     slow = 1 / (dt * a.fps)
     render(a.env, [true, ret, rec], dt,
-           ["Real motion (D4RL)" + (f", {slow:.0f}x slow motion" if slow > 1.05 else ""),
+           ["Real motion (D4RL)",                       # playback speed is stated in the README, not on the frame
             "TabPFN + retrieval (ours)", "TabPFN, recent window"],
            [None, e_ret, e_rec], name, a.fps)
     summary = dict(env=a.env, seed=a.seed, t0=t0, steps=steps, dt=dt, fps=a.fps,

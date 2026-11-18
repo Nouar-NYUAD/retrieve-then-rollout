@@ -50,7 +50,7 @@ def fmt(x):
     if x >= 100:
         return f"{x:.0f}"
     if x >= 0.01:
-        return f"{x:.3f}".rstrip("0").rstrip(".") if x < 1 else f"{x:.2f}"
+        return f"{x:.3f}" if x < 1 else f"{x:.2f}"     # three decimals below 1 (0.020, 0.240)
     m, e = f"{x:.1e}".split("e")
     return rf"${m}\times10^{{{int(e)}}}$"
 
@@ -69,6 +69,7 @@ ARMS = [  # (label, strategy, H, model, ours?)
     ("TabPFN + retrieval", "retrieval", 100, "tabpfn", True),
     ("DynaPFN + retrieval", "retrieval", 100, "dynapfn", True),
     ("TabPFN, full pool", "full", 0, "tabpfn", False),
+    ("TabPFN, random context", "random", 100, "tabpfn", False),
     ("Trained MLP", "trained", 0, "mlp", False),
     ("DynaPFN, recent window", "recent", 100, "dynapfn", False),
     ("TabPFN, recent window", "recent", 100, "tabpfn", False),
@@ -102,6 +103,9 @@ def synthetic(macros):
         macros[f"RetVsRecent{key}Factor"] = f"{ratio:.0f}" if ratio >= 10 else f"{ratio:.2f}"
         macros[f"RetVsRecent{key}Better"] = f"{better}/{n}"
         macros[f"RetVsRecent{key}P"] = f"{p:.3f}"
+        ratio, better, n, p = paired(T, c, ("retrieval", 100, "tabpfn"), ("random", 100, "tabpfn"))
+        macros[f"RetVsRandom{key}Factor"] = f"{ratio:.0f}" if ratio >= 10 else f"{ratio:.1f}"
+        macros[f"RetVsRandom{key}Better"] = f"{better}/{n}"
         ratio, better, n, p = paired(T, c, ("retrieval", 100, "gp"), ("retrieval", 100, "tabpfn"))
         macros[f"GPOverTabPFN{key}Factor"] = f"{ratio:.0f}" if ratio >= 10 else f"{ratio:.2f}"
     ratio, better, n, p = paired(T, "lorenz", ("retrieval", 100, "tabpfn"), ("full", 0, "tabpfn"))

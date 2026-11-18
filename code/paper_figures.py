@@ -220,10 +220,10 @@ def fig_planning():
     for f in glob.glob(f"{PT.SYNC}/plan/plan*.json"):
         for r in json.load(open(f))["results"]:
             acc[(r["task"], r["model"], r["strategy"])].append(r["frac_upright"])
-    bars = [("oracle", "-", "True\ndynamics", "#b9b8b0", None),
+    bars = [("oracle", "-", "Planner with\ntrue dynamics", "#b9b8b0", None),
             ("tabpfn", "trajretrieval", "TabPFN, traj.\nretrieval (ours)", BLUE, None),
             ("tabpfn", "retrieval", "TabPFN,\nretrieval (ours)", BLUE, None),
-            ("tabpfn", "random", "TabPFN,\nrandom", BLUE, "///"),
+            ("tabpfn", "random", "TabPFN,\nrandom context", BLUE, "///"),
             ("tabpfn", "recent", "TabPFN,\nrecent window", ORANGE, "///"),
             ("locallin", "trajretrieval", "Local linear,\ntraj. retrieval", VIOLET, None),
             ("locallin", "recent", "Local linear,\nrecent window", VIOLET, "///")]
@@ -289,7 +289,7 @@ def fig_counterfactual(macros):
     fig.tight_layout()
     fig.legend(h, l, loc="upper center", ncol=3, frameon=False, bbox_to_anchor=(0.5, 0.0))
     save(fig, "counterfactual")
-    f2 = lambda v: f"{v:.2f}"
+    f2 = lambda v: f"{v:.2f}" if v >= 0.095 else f"{v:.1g}"      # 0.003, not 0.00
     for key, st, m in [("Ret", "retrieval", "tabpfn"), ("Recent", "recent", "tabpfn"), ("Full", "full", "tabpfn"),
                        ("Dyna", "retrieval", "dynapfn"), ("MLP", "trained", "mlp")]:
         for x, xk in [("g1_s0", "Zero"), ("g1_s0.1", "Small"), ("g1_s1", "One"), ("g1_s0_ex", "Explore")]:
@@ -315,7 +315,7 @@ def control_table(macros):
          r"Planner model and context & distance (m) & distance (m) & steps before falling \\", r"\midrule"]
     for lab, c, st in arms_:
         hc = acc.get(("halfcheetah", c, st), []); hp = acc.get(("hopper", c, st), [])
-        f = lambda v, i, d: (f"{np.mean([x[i] for x in v]):.{d}f} ({len(v)})" if v else "--")
+        f = lambda v, i, d: (PT.minus(f"{np.mean([x[i] for x in v]):.{d}f}") + f" ({len(v)})" if v else "--")
         L.append(f"{lab} & {f(hc, 0, 2)} & {f(hp, 0, 2)} & {f(hp, 1, 0)} \\\\")
     L += [r"\bottomrule", r"\end{tabular}"]
     (PT.PAPER / "tables" / "control.tex").write_text("\n".join(L) + "\n")
@@ -366,6 +366,10 @@ def cf_robots(macros):
                 if v is not None:
                     macros[f"CFR{key}{k}{ek}"] = f"{v[0]:.2f}"           # uniform actions
                     macros[f"CFR{key}{k}{ek}Mod"] = f"{v[1]:.2f}"        # moderate perturbation (0.3 sd)
+    for s, key in [("halfcheetah", "Cheetah"), ("walker2d", "Walker"), ("hopper", "Hopper")]:
+        a, b = med.get((s, False, "retrieval", "tabpfn")), med.get((s, True, "retrieval", "tabpfn"))
+        if a is not None and b is not None:          # % reduction of the effect error by 5% exploration
+            macros[f"CFR{key}RetCut"] = f"{100 * (1 - b[0] / a[0]):.0f}"
     macros["CFRNSeeds"] = str(min(nseeds.values()))
 
 
@@ -395,6 +399,7 @@ def fig_diagnostics(macros):
     ax.set_title("(b) cost of fitting", loc="left"); ax.legend(fontsize=5.8, frameon=False, loc="upper left")
     macros["DOneTimeTabLarge"] = f"{tt[-1]:.0f}"; macros["DOneTimeGPLarge"] = f"{tg[-1]:.0f}"
     macros["DOneTimeGPSmall"] = f"{tg[0]:.0f}"; macros["DOneTimeTabSmall"] = f"{tt[0]:.0f}"
+    macros["DOneTimeGPMid"] = f"{tg[2]:.0f}"; macros["DOneTimeTabMid"] = f"{tt[2]:.0f}"   # n = 500
     ax = axs[2]
     for model, k, nm in [("tabpfn", "tab_ret", "TabPFN"), ("gp", "gp_ret", "GP")]:
         for strat, fill in [("retrieval", True), ("random", False)]:
@@ -518,7 +523,7 @@ def fig_wall(macros):
             for mdl, mk in (("tabpfn", "Tab"), ("dynapfn", "Dyna")):
                 r, b, nn = paired_ratio(T, st, ("retrieval", 100, mdl), ("retrieval", 100, "gp"))
                 if np.isfinite(r):
-                    macros[f"Wall{wk}{nk}GPOver{mk}"] = f"{r:.2f}" if r < 10 else f"{r:.0f}"
+                    macros[f"Wall{wk}{nk}GPOver{mk}"] = f"{r:.2f}" if r < 1 else f"{r:.1f}" if r < 10 else f"{r:.0f}"
                     macros[f"Wall{wk}{nk}GPOver{mk}Better"] = f"{b}/{nn}"
                     macros[f"Wall{wk}{nk}GPBetterThan{mk}"] = f"{1 / r:.0f}" if r < 0.1 else f"{1 / r:.1f}"
     macros["WallNSeeds"] = str(min(len(d) for (s_, a_), d in T.items() if s_.startswith("pendulum_box") and a_ == arm("tab_ret")))

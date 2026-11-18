@@ -24,6 +24,7 @@ Metrics as in the pilot (normalised RMSE, valid prediction time).
 import argparse
 import json
 import time
+from types import SimpleNamespace
 from pathlib import Path
 
 import numpy as np
@@ -162,7 +163,7 @@ def d4rl_seed(args, rng):
 
 
 # ----------------------------------------------------------------------------- extra models
-CODE_VERSION = "2026-11-15h"   # h: new system pendulum_box (--wall); nothing else changed. c: GP scaling fix; d: --target abs; e: --retrieval_metric; f: --camels_features ext;
+CODE_VERSION = "2026-11-18i"   # i: new strategy "sliding" (Lee et al. 2611.11921 window); nothing else changed. h: new system pendulum_box (--wall); nothing else changed. c: GP scaling fix; d: --target abs; e: --retrieval_metric; f: --camels_features ext;
                                # g: GP kernel fit with optimizer restarts (single start collapsed to an
                                #    all-noise fit on lagged noisy inputs). Non-GP behaviour unchanged.
 
@@ -327,7 +328,7 @@ def run(args):
             pred = Predictor(args, seed, pool, np.random.default_rng(seed * 104729 + int(t0)))
             for strategy in args.strategies:
                 for H in (args.H if strategy not in ("full", "trained") else [0]):
-                    if strategy == "recent" and H > len(hist_idx):
+                    if strategy in ("recent", "sliding") and H > len(hist_idx):
                         continue
                     for model in args.models:
                         if (strategy == "trained") != (model == "mlp"):
@@ -341,6 +342,14 @@ def run(args):
                         fixed = None
                         if strategy in ("recent", "random", "full"):
                             fixed = P.select(strategy, pool, H, hist_idx, None, crng, args.full_cap)
+                        if strategy == "sliding":
+                            # sliding window of Lee et al. (2611.11921): starts as the H latest observed
+                            # transitions; after every step the oldest row is dropped and the query with
+                            # the PREDICTED change is appended, so the window fills with the model's own
+                            # predictions. Only for models that use nothing but the context.
+                            assert model in ("tabpfn", "dynapfn", "locallin", "knn", "parrot"), model
+                            w0 = P.select("recent", pool, H, hist_idx, None, crng, args.full_cap)
+                            Xw, Yw = pool.X[w0].copy(), pool.Y[w0].copy()
                         for h in range(args.horizon):
                             u = U_te[t0 + h]
                             # lags come from the ROLLED-OUT trajectory (true values before t0)
@@ -350,6 +359,14 @@ def run(args):
                             if strategy == "trained":
                                 d = pred(model, None, np.vstack([q, q_true]))
                                 dq, d1 = d[:1], d[1]
+                            elif strategy == "sliding":
+                                pred.pool = SimpleNamespace(X=Xw, Y=Yw)        # context = current window
+                                try:
+                                    d = pred(model, np.arange(len(Xw)), np.vstack([q, q_true]) if one else q)
+                                finally:
+                                    pred.pool = pool
+                                dq, d1 = d[:1], (d[1] if one else None)
+                                Xw = np.vstack([Xw[1:], q]); Yw = np.vstack([Yw[1:], dq])
                             elif fixed is not None:
                                 d = pred(model, fixed, np.vstack([q, q_true]) if one else q)
                                 dq, d1 = d[:1], (d[1] if one else None)
@@ -408,7 +425,8 @@ def main():
     p.add_argument("--camels_file", default="/scratch/naa9497/icwm/data/camels/camels18.npz")
     p.add_argument("--camels_features", default="basic", choices=["basic", "ext"])
     p.add_argument("--models", nargs="+", default=["tabpfn", "gp", "mlp", "locallin", "knn", "parrot"])
-    p.add_argument("--strategies", nargs="+", default=["recent", "random", "retrieval", "full", "trained"])
+    p.add_argument("--strategies", nargs="+", default=["recent", "random", "retrieval", "full", "trained"],
+                   help="also: sliding (window of Lee et al. that fills with predictions)")
     p.add_argument("--H", nargs="+", type=int, default=[100, 500])
     p.add_argument("--seed_ids", nargs="+", type=int, default=[0])
     p.add_argument("--obs_noise", type=float, default=0.0)
