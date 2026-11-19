@@ -119,18 +119,24 @@ def fig_regime(rows, macros):
     T["window"] = {k: {s_: float(np.sqrt(max(1 - v, 1e-12))) for s_, v in d.items() if np.isfinite(v)}
                    for k, d in N.items()}
     n = len(REGIME_ROWS)
-    fig, (ax, bx) = plt.subplots(1, 2, figsize=(6.5, 3.15), sharey=True)
+    fig, (ax, bx) = plt.subplots(1, 2, figsize=(6.5, 2.95), sharey=True)
     w = 0.36
     for i, (lab, h, st, H, sd) in enumerate(REGIME_ROWS):
         key = "Regime" + MACRO[lab]
-        # (a) retrieval vs recent window, same model; noisy rows use one observation as input (the
-        # lagged runs have no recent-window arm)
+        # (a) TabPFN with retrieval vs the sliding window of Lee et al. and vs the fixed recent window
+        # (same model, same H = 100); noisy rows use one observation as input (the lagged runs have
+        # no recent-window arm)
         st_a = st.replace("+lags4", "") if "noise" in st else st
-        for j, (mdl, c) in enumerate([("tabpfn", BLUE), ("dynapfn", MAGENTA)]):
-            r, b, nn = paired_ratio(T[h], st_a, ("retrieval", 100, mdl), ("recent", 100, mdl))
+        for j, (ctx, c) in enumerate([("sliding", VIOLET), ("recent", ORANGE)]):
+            r, b, nn = paired_ratio(T[h], st_a, ("retrieval", 100, "tabpfn"), (ctx, 100, "tabpfn"))
             if np.isfinite(r):
-                ax.barh(i + (j - 0.5) * w, np.log10(r), height=w * 0.92, color=c)
-                macros[f"{key}RetRecent{'Tab' if j == 0 else 'Dyna'}"] = f"{r:.1f}" if r < 100 else f"{r:.0f}"
+                y = i + (j - 0.5) * w
+                ax.barh(y, np.log10(r), height=w * 0.92, color=c)
+                ax.text(np.log10(r) + (0.06 if r > 1 else -0.06), y, f"{b}/{nn}", fontsize=5.6, color=MUTED,
+                        va="center", ha="left" if r > 1 else "right")
+                tag = "Recent" if ctx == "recent" else "Sliding"
+                macros[f"{key}Ret{tag}Tab"] = f"{r:.1f}" if r < 100 else f"{r:.0f}"
+                macros[f"{key}Ret{tag}TabBetter"] = f"{b}/{nn}"
         # (b) local GP / ours, both with retrieved context
         for j, (mdl, c) in enumerate([("tabpfn", BLUE), ("dynapfn", MAGENTA)]):
             r, b, nn = paired_ratio(T[h], st, ("retrieval", H, mdl), ("retrieval", H, "gp"), sd)
@@ -143,16 +149,18 @@ def fig_regime(rows, macros):
                 macros[f"{key}GPOver{tag}"] = f"{r:.1f}"
                 macros[f"{key}GPOver{tag}Better"] = f"{b}/{nn}"
                 macros[f"{key}GPBetterThan{tag}"] = f"{1 / r:.0f}" if r < 0.1 else f"{1 / r:.1f}"
-    for a_, xl, ttl in [(ax, "error ratio: recent window / retrieval", "(a) Retrieval vs the recent window"),
-                        (bx, "error ratio: local GP / ours", "(b) Foundation model vs local GP")]:
+    for a_, xl, ttl, ticks in [(ax, "error ratio: window / retrieval", "(a) TabPFN: retrieval vs recent windows",
+                                [0, 1, 2, 3, 4]),
+                               (bx, "error ratio: local GP / ours", "(b) Foundation model vs local GP",
+                                [-3, -2, -1, 0, 1])]:
         a_.axvline(0, color=INK, lw=0.9)
         a_.set_title(ttl, loc="left"); a_.set_xlabel(xl); a_.grid(axis="y", visible=False)
-        ticks = [-3, -2, -1, 0, 1, 2, 3]
-        a_.set_xticks(ticks); a_.set_xticklabels([f"{10.0 ** t:g}" if t >= 0 else f"1/{10 ** -t}" for t in ticks])
+        a_.set_xticks(ticks)
+        a_.set_xticklabels([(f"{10.0 ** t:g}" if t < 4 else "$10^4$") if t >= 0 else f"1/{10 ** -t}" for t in ticks])
         for g0, g1 in [(-0.5, 3.5), (5.5, n - 0.5)]:
             a_.axhspan(g0, g1, color=SHADE, zorder=0, lw=0)
-    ax.set_xlim(-0.6, 2.8); bx.set_xlim(-3.6, 1.5)
-    ax.text(2.8, -0.95, "retrieval better " + RIGHT, ha="right", fontsize=6.5)
+    ax.set_xlim(-0.6, 5.0); bx.set_xlim(-3.6, 1.5)
+    ax.text(5.0, -0.95, "retrieval better " + RIGHT, ha="right", fontsize=6.5)
     bx.text(1.5, -0.95, "ours better " + RIGHT, ha="right", fontsize=6.5)
     bx.text(-3.6, -0.95, LEFT + " local GP better", ha="left", fontsize=6.5)
     ax.set_yticks(range(n)); ax.set_yticklabels([r[0] for r in REGIME_ROWS]); ax.invert_yaxis()
@@ -161,9 +169,12 @@ def fig_regime(rows, macros):
                     arrowprops=dict(arrowstyle="-", color=MUTED, lw=0.9), annotation_clip=False)
         ax.text(-0.66, (y0 + y1) / 2, g, transform=ax.get_yaxis_transform(), rotation=90, fontsize=6.5,
                 color=MUTED, ha="center", va="center", style="italic")
-    fig.legend([Line2D([], [], color=BLUE, lw=6), Line2D([], [], color=MAGENTA, lw=6)],
-               ["TabPFN", "DynaPFN"], loc="lower center", ncol=2, frameon=False, bbox_to_anchor=(0.55, -0.04))
-    fig.tight_layout(rect=(0, 0.04, 1, 1))
+    fig.tight_layout(rect=(0, 0.035, 1, 1))
+    ax.legend([Line2D([], [], color=VIOLET, lw=6), Line2D([], [], color=ORANGE, lw=6)],
+              ["vs sliding window (Lee et al.)", "vs fixed window"], loc="upper center", ncol=2,
+              frameon=False, bbox_to_anchor=(0.45, -0.17), handlelength=1.2, columnspacing=0.8)
+    bx.legend([Line2D([], [], color=BLUE, lw=6), Line2D([], [], color=MAGENTA, lw=6)],
+              ["TabPFN", "DynaPFN"], loc="upper center", ncol=2, frameon=False, bbox_to_anchor=(0.5, -0.17))
     save(fig, "regime")
 
 
