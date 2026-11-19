@@ -300,13 +300,15 @@ def fig_counterfactual(macros):
 def control_table(macros):
     """Closed-loop MPC on D4RL robots (results/sync/demo): distance and steps before falling, mean over
     seeds; appendix table + macros. Partial checkpoint files are ignored."""
-    acc = defaultdict(list)
+    acc = defaultdict(list); sec = []
     for f in glob.glob(f"{PT.SYNC}/demo/*.json"):
         if "partial" in f:
             continue
         for r in json.load(open(f))["results"]:
             env = r.get("env", "halfcheetah")
             acc[(env, r["controller"], r["strategy"])].append((r["distance"], r.get("steps_alive", r["T"]), r["T"]))
+            if env == "halfcheetah" and r["controller"] == "tabpfn":
+                sec.append(r["secs_per_step"])
     arms_ = [("Planner with the true dynamics", "oracle", "-"), (r"\textbf{TabPFN, trajectory retrieval (ours)}", "tabpfn", "trajretrieval"),
              ("TabPFN, recent window", "tabpfn", "recent"), ("TabPFN, random context", "tabpfn", "random"),
              ("Trained MLP", "mlp", "-"), ("Random actions", "random", "-")]
@@ -327,6 +329,7 @@ def control_table(macros):
                 macros[f"Ctl{ek}{k}Dist"] = f"{np.mean([x[0] for x in v]):.1f}"
                 macros[f"Ctl{ek}{k}Steps"] = f"{np.mean([x[1] for x in v]):.0f}"
     macros["CtlHopperT"] = "200"
+    macros["CtlCheetahTabSecPerStep"] = f"{round(float(np.median(sec)), -1):.0f}"   # TabPFN planners, all contexts
 
 
 def cf_robots(macros):

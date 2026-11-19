@@ -23,7 +23,7 @@ def fmt(x):
     if x >= 100:
         return f"{x:.0f}"
     if x >= 0.01:
-        return f"{x:.3f}" if x < 1 else f"{x:.2f}"     # three decimals below 1 (0.020, 0.240)
+        return f"{x:.3f}" if x < 1 else (f"{x:.2f}" if x < 10 else f"{x:.1f}")   # 0.240, 2.45, 24.5
     m, e = f"{x:.1e}".split("e")
     return rf"${m}\times10^{{{int(e)}}}$"
 
