@@ -35,7 +35,7 @@ foundation models into accurate world models — at a cost that stays constant a
 
 | | Result |
 |---|---|
-| 🎯 **Retrieval fixes rollouts** | **315×** lower error than the recent window on Lorenz-63, **25×** on a forced pendulum, **7.9×** on Hopper, **4.9×** on Walker2d (10/10 seeds) |
+| 🎯 **Retrieval fixes rollouts** | vs the sliding recent window of prior work (Lee et al., 2026): **123×** lower error on Hopper, **11.9×** on Walker2d, **8274×** on Lorenz-63 (10/10 seeds each). Even vs a stronger, fixed recent window: **315×** on Lorenz-63, **7.9×** on Hopper |
 | 🤖 **Beats a classic local GP where it matters** | **8.2×** on Hopper, **4.5×** on Walker2d, **3.2×** on real river flow (CAMELS, 17/18 basins) |
 | 🧱 **Explains when the GP wins** | GP is 93× better on a smooth noise-free pendulum — add impacts and **ours wins 12×** (5/5 seeds) |
 | 🔀 **Counterfactual action effects** | 5% exploratory data roughly halves the action-effect error with retrieval; the recent window never benefits |
@@ -57,7 +57,7 @@ Full-resolution videos and per-horizon errors: [`demo/`](demo/).
 
 <p align="center"><img src="figures/regime.png" width="95%"/></p>
 
-**(a)** Retrieved vs recent-window context for the same model. **(b)** Local Gaussian process vs our
+**(a)** TabPFN with retrieved context vs the sliding window of Lee et al. (purple) and a fixed recent window (orange). **(b)** Local Gaussian process vs our
 foundation models, both with retrieved context — the GP wins only on noise-free simulated ODEs.
 
 <p align="center"><img src="figures/robots.png" width="95%"/></p>
