@@ -79,13 +79,14 @@ def paired_macros(macros, key, T, setting_, a, b):
     ks = sorted(set(Ad) & set(Bd))
     x = np.array([Ad[k] for k in ks]); y = np.array([Bd[k] for k in ks])
     p = wilcoxon(x, y).pvalue if len(ks) >= 5 and np.any(x != y) else np.nan
-    r = np.median(y / x)
-    macros[key + "Factor"] = f"{r:.1f}" if r >= 1 else f"{r:.2f}"
+    r = np.median(y / x) if ks else np.nan
+    macros[key + "Factor"] = f"{r:.0f}" if r >= 100 else (f"{r:.1f}" if r >= 1 else f"{r:.2f}")
     macros[key + "Better"] = f"{int((x < y).sum())}/{len(ks)}"
     macros[key + "P"] = f"{p:.3f}" if np.isfinite(p) else "--"
 
 
 RET, REC, FULL = ("retrieval", 100, "tabpfn"), ("recent", 100, "tabpfn"), ("full", 0, "tabpfn")
+SLD = ("sliding", 100, "tabpfn")   # sliding window of Lee et al. (fills with the model's own predictions)
 
 
 def robots(macros, rows):
@@ -103,7 +104,9 @@ def robots(macros, rows):
             ("Trained MLP", ("trained", 0, "mlp"), False),
             ("DynaPFN, recent window", ("recent", 100, "dynapfn"), False),
             ("TabPFN, recent window", REC, False),
+            ("TabPFN, sliding window", SLD, False),
             ("GP, recent window", ("recent", 100, "gp"), False)]
+    arms = [x for x in arms if any(x[1] == k[1] for k in list(T) + list(N))]   # rows without results dropped
     table("robots.tex", cols, arms, {c: (N if c == cam else T) for c, _ in cols},
           {c: (fmt_nse if c == cam else fmt) for c, _ in cols}, {c: ("max" if c == cam else "min") for c, _ in cols})
     macros["NSeedsDFourRL"] = str(min(med(T, c, RET)[1] for c, _ in cols[:3]))
@@ -114,6 +117,9 @@ def robots(macros, rows):
         paired_macros(macros, f"DynaRetVsRecent{key}", T, c, ("retrieval", 100, "dynapfn"), ("recent", 100, "dynapfn"))
         paired_macros(macros, f"DynaRetVsTabRet{key}", T, c, ("retrieval", 100, "dynapfn"), RET)
         paired_macros(macros, f"RetVsRandom{key}", T, c, RET, ("random", 100, "tabpfn"))   # same H, same pool
+        if T.get((c, SLD)):
+            paired_macros(macros, f"RetVsSliding{key}", T, c, RET, SLD)
+            paired_macros(macros, f"RecentVsSliding{key}", T, c, REC, SLD)
     # one phrase for the two robots of section 5.1 ("10/10 seeds each, p = 0.002" when they agree)
     hb, wb = macros["RetVsRecentHopperBetter"], macros["RetVsRecentWalkerBetter"]
     hp, wp = macros["RetVsRecentHopperP"], macros["RetVsRecentWalkerP"]
@@ -121,7 +127,7 @@ def robots(macros, rows):
                                         else f"{hb} and {wb} seeds, $p={hp}$ and ${wp}$")
     for lab, arm in [("DynaRet", ("retrieval", 100, "dynapfn")), ("TabRet", RET), ("TabFull", FULL),
                      ("TabRecent", REC), ("DynaRecent", ("recent", 100, "dynapfn")), ("GPRet", ("retrieval", 100, "gp")),
-                     ("MLP", ("trained", 0, "mlp"))]:
+                     ("MLP", ("trained", 0, "mlp"))] + ([("TabSliding", SLD)] if N.get((cam, SLD)) else []):
         macros["CamelsNSE" + lab] = minus(f"{med(N, cam, arm)[0]:.2f}")
         v = [x for x in N.get((cam, arm), {}).values()]
         macros["CamelsNegNSE" + lab] = str(int(np.sum(~(np.array(v) >= 0))))   # basins with NSE < 0 (or diverged)
@@ -132,6 +138,8 @@ def robots(macros, rows):
         macros[f"LNSix{w}TabFull"] = fmt(med(T, c, FULL)[0])
         macros[f"LNSix{w}TabRecent"] = fmt(med(T, c, REC)[0])
         macros[f"LNSix{w}TabRandom"] = fmt(med(T, c, ("random", 100, "tabpfn"))[0])
+        if T.get((c, SLD)):
+            macros[f"LNSix{w}TabSliding"] = fmt(med(T, c, SLD)[0])
         macros[f"LNSix{w}GPRandom"] = fmt(med(T, c, ("random", 100, "gp"))[0])
 
 

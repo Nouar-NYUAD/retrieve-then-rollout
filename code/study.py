@@ -163,7 +163,7 @@ def d4rl_seed(args, rng):
 
 
 # ----------------------------------------------------------------------------- extra models
-CODE_VERSION = "2026-11-18i"   # i: new strategy "sliding" (Lee et al. 2611.11921 window); nothing else changed. h: new system pendulum_box (--wall); nothing else changed. c: GP scaling fix; d: --target abs; e: --retrieval_metric; f: --camels_features ext;
+CODE_VERSION = "2026-11-18j"   # j: sliding: a diverged (NaN) or unfittable window ends the rollout as diverged (NaN); results otherwise identical to i. i: new strategy "sliding" (Lee et al. 2611.11921 window); nothing else changed. h: new system pendulum_box (--wall); nothing else changed. c: GP scaling fix; d: --target abs; e: --retrieval_metric; f: --camels_features ext;
                                # g: GP kernel fit with optimizer restarts (single start collapsed to an
                                #    all-noise fit on lagged noisy inputs). Non-GP behaviour unchanged.
 
@@ -359,12 +359,37 @@ def run(args):
                             if strategy == "trained":
                                 d = pred(model, None, np.vstack([q, q_true]))
                                 dq, d1 = d[:1], d[1]
+                            elif strategy == "sliding" and not np.all(np.isfinite(s)):
+                                # rollout already diverged: its error stays NaN for the remaining steps
+                                # (as for the other strategies); the window would otherwise receive NaN
+                                # targets, on which the model cannot be fitted
+                                dq = np.full((1, len(s)), np.nan); d1 = np.full(len(s), np.nan) if one else None
                             elif strategy == "sliding":
-                                pred.pool = SimpleNamespace(X=Xw, Y=Yw)        # context = current window
-                                try:
-                                    d = pred(model, np.arange(len(Xw)), np.vstack([q, q_true]) if one else q)
-                                finally:
-                                    pred.pool = pool
+                                Xq2 = np.vstack([q, q_true]) if one else q
+                                if not (np.all(np.isfinite(Xw)) and np.all(np.isfinite(Yw))):
+                                    print(f"[sliding] non-finite window at h={h}", flush=True)
+                                if model == "tabpfn" and not args.tabpfn_n_estimators and args.target == "delta":
+                                    # low-memory equivalent of the generic Predictor path (same model, seed,
+                                    # data): fit, predict and free one state dimension at a time, so only one
+                                    # TabPFN copy is on the GPU (the window changes every step anyway)
+                                    d = np.empty((len(Xq2), Yw.shape[1]))
+                                    try:
+                                        for j in range(Yw.shape[1]):
+                                            m_ = P.make_model("tabpfn", args, seed).fit(Xw, Yw[:, j])
+                                            d[:, j] = m_.predict(Xq2); del m_
+                                    except ValueError as e:
+                                        # the window (filled with the model's own predictions) became
+                                        # unfittable: counted as a diverged rollout (NaN from here on)
+                                        print(f"[sliding] model failed at h={h}: {e}; window |Y| max "
+                                              f"{np.nanmax(np.abs(Yw)):.3g}, sd per dim {np.nanstd(Yw, 0)}, "
+                                              f"|X| max {np.nanmax(np.abs(Xw)):.3g}", flush=True)
+                                        d = np.full((len(Xq2), Yw.shape[1]), np.nan)
+                                else:
+                                    pred.pool = SimpleNamespace(X=Xw, Y=Yw)    # context = current window
+                                    try:
+                                        d = pred(model, np.arange(len(Xw)), Xq2)
+                                    finally:
+                                        pred.pool = pool
                                 dq, d1 = d[:1], (d[1] if one else None)
                                 Xw = np.vstack([Xw[1:], q]); Yw = np.vstack([Yw[1:], dq])
                             elif fixed is not None:

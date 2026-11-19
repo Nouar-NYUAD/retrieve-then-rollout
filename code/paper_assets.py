@@ -73,13 +73,15 @@ ARMS = [  # (label, strategy, H, model, ours?)
     ("Trained MLP", "trained", 0, "mlp", False),
     ("DynaPFN, recent window", "recent", 100, "dynapfn", False),
     ("TabPFN, recent window", "recent", 100, "tabpfn", False),
+    ("TabPFN, sliding window", "sliding", 100, "tabpfn", False),
     ("GP, recent window", "recent", 100, "gp", False),
 ]
 
 
 def synthetic(macros):
     rows = load(["results/sync/pilot/full_lorenz_*.json", "results/sync/pilot/full_pendulum_*.json",
-                 "results/sync/gp/gpg_full_lorenz_*.json", "results/sync/gp/gpg_full_pendulum_*.json"], 3)
+                 "results/sync/gp/gpg_full_lorenz_*.json", "results/sync/gp/gpg_full_pendulum_*.json",
+                 "results/sync/sliding/sliding_full_lorenz_*.json", "results/sync/sliding/sliding_full_pendulum_*.json"], 3)
     T = per_seed(rows, "300")
     cols = [("lorenz", "Lorenz-63"), ("pendulum", "Pendulum"), ("lorenz_noisy", "Lorenz-63, 5\\% noise"),
             ("pendulum_noisy", "Pendulum, 5\\% noise")]
@@ -87,6 +89,8 @@ def synthetic(macros):
     L = [r"\begin{tabular}{l" + "c" * len(cols) + "}", r"\toprule",
          "Model and context & " + " & ".join(n for _, n in cols) + r" \\", r"\midrule"]
     for label, st, H, m, ours in ARMS:
+        if not any(k[1:] == (st, H, m) for k in T):
+            continue                                   # no results for this arm (e.g. sliding not run yet)
         vals = []
         for c, _ in cols:
             v = list(T.get((c, st, H, m), {}).values())
@@ -98,11 +102,19 @@ def synthetic(macros):
     (PAPER / "tables" / "synthetic.tex").write_text("\n".join(L) + "\n")
     macros["NSeedsSynthetic"] = str(min(nseeds.values()))
     # key paired comparisons used in the text
-    for key, c in [("Lorenz", "lorenz"), ("Pendulum", "pendulum"), ("PendulumNoisy", "pendulum_noisy")]:
+    for key, c in [("Lorenz", "lorenz"), ("Pendulum", "pendulum"), ("PendulumNoisy", "pendulum_noisy"),
+                   ("LorenzNoisy", "lorenz_noisy")]:
         ratio, better, n, p = paired(T, c, ("retrieval", 100, "tabpfn"), ("recent", 100, "tabpfn"))
         macros[f"RetVsRecent{key}Factor"] = f"{ratio:.0f}" if ratio >= 10 else f"{ratio:.2f}"
         macros[f"RetVsRecent{key}Better"] = f"{better}/{n}"
         macros[f"RetVsRecent{key}P"] = f"{p:.3f}"
+        if T.get((c, "sliding", 100, "tabpfn")):
+            ratio, better, n, p = paired(T, c, ("retrieval", 100, "tabpfn"), ("sliding", 100, "tabpfn"))
+            macros[f"RetVsSliding{key}Factor"] = f"{ratio:.0f}" if ratio >= 10 else f"{ratio:.1f}"
+            macros[f"RetVsSliding{key}Better"] = f"{better}/{n}"
+            ratio, better, n, p = paired(T, c, ("recent", 100, "tabpfn"), ("sliding", 100, "tabpfn"))
+            macros[f"RecentVsSliding{key}Factor"] = f"{ratio:.0f}" if ratio >= 10 else f"{ratio:.1f}"
+            macros[f"RecentVsSliding{key}Better"] = f"{better}/{n}"
         ratio, better, n, p = paired(T, c, ("retrieval", 100, "tabpfn"), ("random", 100, "tabpfn"))
         macros[f"RetVsRandom{key}Factor"] = f"{ratio:.0f}" if ratio >= 10 else f"{ratio:.1f}"
         macros[f"RetVsRandom{key}Better"] = f"{better}/{n}"
